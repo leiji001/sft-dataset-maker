@@ -35,6 +35,7 @@
 ```bash
 git clone https://github.com/leiji001/sft-dataset-maker.git
 cd sft-dataset-maker
+uv venv
 uv pip install -e .
 ```
 
