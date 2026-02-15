@@ -39,7 +39,7 @@ class MinerUConfig:
     """MinerU 远端服务配置"""
 
     api_url: str = field(
-        default_factory=lambda: os.getenv("MINERU_API_URL", "http://localhost:8888/pdf_parse")
+        default_factory=lambda: os.getenv("MINERU_API_URL", "http://localhost:8888/file_parse")
     )
     timeout: int = field(
         default_factory=lambda: int(os.getenv("MINERU_TIMEOUT", "300"))

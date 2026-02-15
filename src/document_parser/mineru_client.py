@@ -24,45 +24,61 @@ class MinerUClient:
             file_path: 文件路径
 
         Returns:
-            解析后的文本内容
+            解析后的 Markdown 文本内容
         """
         with open(file_path, "rb") as f:
-            files = {"file": (file_path.name, f, "application/octet-stream")}
+            files = [("files", (file_path.name, f, "application/octet-stream"))]
+            data = {
+                "return_md": "true",
+            }
             response = httpx.post(
                 self.config.api_url,
                 files=files,
+                data=data,
                 timeout=self.config.timeout,
             )
 
         response.raise_for_status()
         result = response.json()
 
-        # 根据 MinerU API 返回格式提取文本
-        # 通常返回 {"content": "...", "pages": [...]} 等结构
+        # 从返回结果中提取 markdown 内容
         if isinstance(result, dict):
-            # 尝试多种常见返回格式
+            if "md_content" in result:
+                return result["md_content"]
+            if "markdown" in result:
+                return result["markdown"]
             if "content" in result:
                 return result["content"]
             if "text" in result:
                 return result["text"]
-            if "pages" in result:
-                pages_text = []
-                for page in result["pages"]:
-                    if isinstance(page, dict):
-                        page_content = page.get("content", page.get("text", ""))
-                        if page_content:
-                            pages_text.append(str(page_content))
-                    elif isinstance(page, str):
-                        pages_text.append(page)
-                return "\n\n".join(pages_text)
+            # 如果返回的是多文件结果列表
+            if "results" in result and isinstance(result["results"], list):
+                parts = []
+                for item in result["results"]:
+                    if isinstance(item, dict):
+                        md = item.get("md_content", item.get("markdown", item.get("content", "")))
+                        if md:
+                            parts.append(str(md))
+                    elif isinstance(item, str):
+                        parts.append(item)
+                return "\n\n".join(parts)
+
+        # 如果返回的直接是字符串
+        if isinstance(result, str):
+            return result
 
         return str(result)
 
     def is_available(self) -> bool:
-        """检测 MinerU 服务是否可用"""
+        """检测 MinerU 服务是否可用
+
+        通过向 API 端点发送 OPTIONS 或 GET 请求来检测服务状态。
+        """
         try:
+            base_url = self.config.api_url.rsplit("/", 1)[0]
+            # 尝试根路径或 /docs 端点 (FastAPI 默认提供)
             response = httpx.get(
-                self.config.api_url.rsplit("/", 1)[0] + "/health",
+                base_url + "/docs",
                 timeout=5,
             )
             return response.status_code == 200
