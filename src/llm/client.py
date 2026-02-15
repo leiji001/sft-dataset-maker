@@ -1,4 +1,4 @@
-"""LLM 客户端 - 统一支持 OpenAI 兼容接口与 Ollama"""
+"""LLM 客户端 - 支持 OpenAI 兼容接口"""
 
 from openai import OpenAI
 
@@ -6,27 +6,17 @@ from src.config import LLMConfig
 
 
 class LLMClient:
-    """LLM 客户端, 支持 OpenAI 兼容接口及 Ollama
+    """LLM 客户端, 支持 OpenAI 兼容接口
 
-    两者均通过 OpenAI SDK 调用:
-    - OpenAI 类接口: 直接使用 base_url + api_key
-    - Ollama: 通过 Ollama 的 OpenAI 兼容端点 (http://localhost:11434/v1)
+    通过 OpenAI SDK 调用 OpenAI 类接口
     """
 
     def __init__(self, config: LLMConfig) -> None:
         self.config = config
-
-        # Ollama 和 OpenAI 兼容接口统一通过 OpenAI SDK 调用
-        if config.provider == "ollama":
-            self.client = OpenAI(
-                base_url=config.base_url or "http://localhost:11434/v1",
-                api_key=config.api_key or "ollama",  # Ollama 不需要真实 key
-            )
-        else:
-            self.client = OpenAI(
-                base_url=config.base_url,
-                api_key=config.api_key,
-            )
+        self.client = OpenAI(
+            base_url=config.base_url,
+            api_key=config.api_key,
+        )
 
     def chat(self, system_prompt: str, user_prompt: str) -> str:
         """发送聊天请求
